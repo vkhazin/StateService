@@ -1,0 +1,30 @@
+{
+  "name": "NoLdapStateService",
+  "version": "0.0.2",
+  "description": "NoLdap State Service",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/shomi-com/NoLdapStateService.git"
+  },
+  "author": "Vlad Khazin <vladimir.khazin@icssolutions.ca",
+  "scripts": {
+    "start": "node app.js",
+    "test": "mocha"
+  },  
+  "dependencies": {
+    "bluebird": "^3.1.1",
+    "config": "^1.17.1",
+    "promise-redis": "0.0.5",
+    "restify": "^4.0.3",
+    "underscore": "^1.8.3",
+    "uuid": "^2.0.1"
+  },
+  "devDependencies": {
+    "chai": "^3.4.1",
+    "mocha": "^2.3.4"
+  }
+}

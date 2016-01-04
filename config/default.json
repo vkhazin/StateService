@@ -1,0 +1,9 @@
+{
+    "defaultTtlSec": 3600,
+    "xAuthKeys": [
+        "4a060c73-aced-4819-9318-12fba2dafd58"
+    ],
+    "redis": {
+        "url": "redis://192.168.99.100:32768"
+    }
+}
