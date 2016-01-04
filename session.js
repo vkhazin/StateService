@@ -30,8 +30,29 @@ exports.create =  function (cnf, lgr, cch) {
 	var setExpiryDate = function (session){
 	    var now = new Date();
 	    session.ttlSec = Number(session.ttlSec || config.defaultTtlSec);
-	    session.Expires = new Date(now.setSeconds(now.getSeconds() + session.ttlSec));
+	    session.expiresOn = new Date(now.setSeconds(now.getSeconds() + session.ttlSec));
 	    return session;
+	};
+
+	var get = function (xSessionToken) {
+    	var session = null;
+    	return cache.get(xSessionToken)
+			.then(function(result){
+				if (result) {
+				session = setExpiryDate(result);
+				return cache.setExpiry(session.xSessionToken, session.ttlSec);
+				} else {
+					return promise.reject({ code: 401, msg: 'Invalid xSessionToken'});
+				}
+			})
+			.then(function(result){
+				return promise.resolve(session);
+			});
+	};
+
+	var save = function(session){
+		session = setExpiryDate(session);
+		return cache.set(session.xSessionToken, session, session.ttlSec);
 	};
 
 	return (function () {
@@ -43,36 +64,50 @@ exports.create =  function (cnf, lgr, cch) {
 	        		.then(function(result){
 	        			session = JSON.parse(JSON.stringify(input));
 			            session.xSessionToken = session.xSessionToken || uuid.v4();
-			            session = setExpiryDate(session);
-			            return cache.set(session.xSessionToken, session, session.ttlSec);
+			            return save(session);
 	        		})
 	            	.then(function(result){
 	            		return promise.resolve(session);
 	            	});
 			},
-	        get: function (xSessionToken) {
-	        	var session = null;
-	        	return cache.get(xSessionToken)
-					.then(function(result){
-						session = setExpiry(result);
-						return cache.setExpiry(session.xSessionToken, xSession.ttlSec);
-					})
-					.then(function(result){
-						return promise.resolve(session);
-					});
-			},			
-	        // del: function (key) {
-	        // 	return getRedisClient()
-	        // 		.then(function(client) {
-	        // 			return client.del(key);
-	        // 		})
-	        // 		.then(function(result){
-	        // 			return promise.resolve(result == true);
-	        // 		})
-	        // 		.catch(function(err){
-	        // 			return handleError(err);
-	        // 		});
-	        // }	        
+	        get: get,
+	        validate: function(xSessionToken){
+	        	return get(xSessionToken)
+	        		.then(function(result){
+	        			return promise.resolve({
+	                        isValid: true,
+	                        expiresOn: result.expiresOn,
+	                        ttlSec: result.ttlSec
+	                    });
+	        		});
+	        },
+	        del: function(xSessionToken) {
+	        	return cache.del(xSessionToken)
+	        		.then(function(result){
+	        			if (result != true) {
+	        				return promise.reject({ code: 404, msg: 'Invalid xSessionToken: ' + xSessionToken});
+	        			} else {
+	        				return promise.resolve(result);
+	        			}
+	        		});
+	        },
+	        update: function(xSessionToken, sessionData){
+	        	return get(xSessionToken)
+	        		.then(function(result){
+	        			//Prevent token manipulation
+	        			sessionData.xSessionToken = xSessionToken;
+	        			return save(sessionData);
+	        		})
+	       	},
+	        patch: function(xSessionToken, newData) {
+	        	return get(xSessionToken)
+	        		.then(function(session){
+			            for (var key in newData) {
+			                session[key] = newData[key];    
+			            }
+			            return save(session);
+	        		});
+	        }
 	    };
 	}());
 };
