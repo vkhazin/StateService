@@ -220,3 +220,7 @@ BODY:
     "deleted": false
 }
 ```
+
+# Environments #
+
+Dev: http://state-service-dev-ms.end-points.io/
