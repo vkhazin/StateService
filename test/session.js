@@ -164,7 +164,7 @@ describe('session', function() {
                 return session.validate(result.xSessionToken);
             })
             .then(function(result){
-                expect(result.ttlSec).to.equal(ttlSec);
+                expect(result.isValid).to.equal(ttlSec);
                 expect(result.isValid).to.equal(true);
             })            
             .catch(function(err){

@@ -52,7 +52,15 @@ exports.create =  function (cnf, lgr, cch) {
 
 	var save = function(session){
 		session = setExpiryDate(session);
-		return cache.set(session.xSessionToken, session, session.ttlSec);
+		return cache.set(session.xSessionToken, session, session.ttlSec)
+			.then(function(result){
+				if (result == 1) {
+					return promise.resolve(session);
+				} else {
+					return promise.reject('Failed to save session');
+				}
+
+			});
 	};
 
 	return (function () {

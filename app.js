@@ -13,7 +13,7 @@ var session        = require('./session').create(config, logger, cache);
 Configuration
 **********************************************************************************/
 var appInfo 		= require('./package.json');
-var port 			= process.env.PORT || 1337;
+var port 			= process.env.PORT || 3000;
 var server 			= restify.createServer();
 /*********************************************************************************/
 
@@ -43,6 +43,9 @@ server.use(restify.gzipResponse());
 End-points
 **********************************************************************************/
 //Echo
+server.get({path: '/', flags: 'i'}, echo);
+server.get({path: '/echo', flags: 'i'}, echo);
+server.get({path: routePrefix, flags: 'i'}, echo);
 server.get({path: routePrefix + '/echo', flags: 'i'}, echo);
 
 function echo(req, res, next) {
@@ -66,11 +69,11 @@ server.post({path: routePrefix, flags: 'i'}, function (req, res, next) {
         .then(function(result){
             res.send(result);
         })
-        .cache(function(err){
+        .catch(function(err){
             if (err.code == 401) {
-                res.send(401, err.msg);
+                return res.send(401, err.msg);
             } else {
-                res.send(500, err);
+                return res.send(500, err);
             }
         })
         .done(function(){
@@ -85,13 +88,13 @@ server.get({path: routePrefix + '/:xSessionToken', flags: 'i'}, function (req, r
 
     session.get(xSessionToken)
         .then(function(sessionData){
-            res.send(sessionData);
+            return res.send(sessionData);
         })
         .catch(function(err){
             if (err.code == 401) {
-                res.send(401, err);
+                return res.send(401, err);
             } else {
-                res.send(500, err);
+                return res.send(500, err);
             }
         })
         .done(function(){
@@ -100,19 +103,19 @@ server.get({path: routePrefix + '/:xSessionToken', flags: 'i'}, function (req, r
 });
 
 //Validate session by x-session-token
-server.get({path: routePrefix + '/:sessionToken/validate', flags: 'i'}, function (req, res, next) {
+server.get({path: routePrefix + '/:xSessionToken/validate', flags: 'i'}, function (req, res, next) {
 
     var xSessionToken = req.params.xSessionToken;
 
-    session.get(xSessionToken)
+    session.validate(xSessionToken)
         .then(function(sessionData){
-            res.send(sessionData);
+            return res.send(sessionData);
         })
         .catch(function(err){
             if (err.code == 401) {
-                res.send(401, err);
+                return res.send(401, err);
             } else {
-                res.send(500, err);
+                return res.send(500, err);
             }
         })
         .done(function(){
@@ -128,13 +131,14 @@ server.put({path: routePrefix + '/:xSessionToken', flags: 'i'}, function (req, r
 
     session.update(xSessionToken, input)
         .then(function(result){
-            res.send(result);
+console.info(result);
+            return res.send(result);
         })
-        .cache(function(err){
+        .catch(function(err){
             if (err.code == 401) {
-                res.send(401, err.msg);
+                return res.send(401, err.msg);
             } else {
-                res.send(500, err);
+                return res.send(500, err);
             }
         })
         .done(function(){
@@ -149,13 +153,13 @@ server.del({path: routePrefix + '/:xSessionToken', flags: 'i'}, function (req, r
     
     session.del(xSessionToken)
         .then(function(result){
-            res.send({ Deleted: true});  
+            return res.send({ deleted: true});  
         })
-        .cache(function(err){
+        .catch(function(err){
             if (err.code == 404) {
-                res.send(404, { Deleted: false});
+                return res.send(404, { deleted: false});
             } else {
-                res.send(500, err);
+                return res.send(500, err);
             }
         })
         .done(function(){
@@ -171,13 +175,13 @@ server.patch({path: routePrefix + '/:xSessionToken', flags: 'i'}, function (req,
 
     session.patch(xSessionToken, input)
         .then(function(result){
-            res.send(result);
+            return res.send(result);
         })
-        .cache(function(err){
+        .catch(function(err){
             if (err.code == 401) {
-                res.send(401, err.msg);
+                return res.send(401, err.msg);
             } else {
-                res.send(500, err);
+                return res.send(500, err);
             }
         })
         .done(function(){
