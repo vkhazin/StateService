@@ -1,34 +1,32 @@
-# NoLdapState Service #
+# State Service #
 
-State management for the purpose of Authentication, Authorization, and arbitrary session data storage.
+State management for the purpose of arbitrary session data storage.
 
-Sliding expiry: sessionExpirySec setting in ./config/default.json file.
+Sliding expiry: defaultTtlSec setting in ./config/default.json file.
 Get/Put/Patch will extend the sliding expiry.
 
-Two repository types supported: redis and couchbase. 
+# Create Session #
+Secured by x-auth-key Http Header.
 
-## Create Session ##
-Secured by x-key Http Header.
+Initial implementation compares xAuthKeys from ./config/default.json file
 
-Initial implementation compares credentials.key from ./config/default.json file
-
-### Request ###
+## Request ##
 Header ->  
-x-key: string  
-x-ttl: integer in seconds to contorl session expiry.
+x-auth-key: string  
 
-POST: /
+POST: /v1
 
 BODY:
 
 ```
 {
     "xSessionToken": "Wl5DA4rBbDNcuYpuJxwQ8xrLC98LPKaS7wcjm9", <--Optional when consumer wants to dictate session token
-    "AccountId": "6309c3e7-4637-4a7d-b20e-c0cf3f628d0f"
+    "AccountId": "6309c3e7-4637-4a7d-b20e-c0cf3f628d0f",
+    "ttlSec": 36000 <--Optional, if omitted default value is used
 }
 ```
 
-### Response ###
+## Response ##
 Status: 200
 
 BODY:
@@ -37,22 +35,19 @@ BODY:
 {
     "AccountId": "6309c3e7-4637-4a7d-b20e-c0cf3f628d0f",
     "xSessionToken": "1c6d3006-9ca4-4115-80ee-9fc9225f3001",
-    "Expires": "2015-05-18T17:15:51.628Z",
-    "Ttl":86400
+    "expiresOn": "2015-05-18T17:15:51.628Z",
+    "ttlSec": 3600
 }
 ```
 
-If an "xSessionToken" value has been supplied in the request - the service will honour the value instead of issuing a new one.
-
-## Get Session ##
+# Get Session #
 Secured by x-session-token Http Header.
-
 Returns full content of the session.
 
-### Request ###
+## Request ##
 Header -> x-session-token: Id from the create session response
 
-GET: /
+GET: /v1/1c6d3006-9ca4-4115-80ee-9fc9225f3001
 
 ### Response-OK ###
 Status: 200
@@ -62,79 +57,74 @@ BODY:
 ```
 {
     "AccountId": "6309c3e7-4637-4a7d-b20e-c0cf3f628d0f",
-    "xSessionToken": "02a3e5bb-607c-4f68-a6c6-f2ecd024c9ed",
-    "Expires": "2015-05-18T17:18:25.813Z",
-    "Ttl":86400
+    "xSessionToken": "1c6d3006-9ca4-4115-80ee-9fc9225f3001",
+    "expiresOn": "2015-05-18T17:15:51.628Z",
+    "ttlSec": 3600
 }
 ```
 
-### Response-Error ###
+## Response-Error ##
 Status: 401
 
 BODY:
 
 ```
 {
-    "code": "UnauthorizedError",
-    "message": "Session with token:'12a3e5bb-607c-4f68-a6c6-f2ecd024c9ed' was not found"
+    "code": "401",
+    "message": "Invalid xSessionToken: 12a3e5bb-607c-4f68-a6c6-f2ecd024c9ed"
 }
 ```
 
-## Validate Session ##
-Secured by x-session-token Http Header.
+# Validate Session #
 
 Returns confirmation session is alive. 
 
-
 ### Request ###
-Header -> x-session-token: Id from 'create session' response
 
-GET: /validate
+GET: /v1/6309c3e7-4637-4a7d-b20e-c0cf3f628d0f/validate
 
-### Response-OK ###
+## Response-OK ##
 Status: 200
 
 BODY:
 
 ```
 {
-    "IsValid": true,
-    "Expires": "2015-05-18T17:21:13.127Z",
-    "Ttl":86400
+    "isValid": true,
+    "expiresOn": "2015-05-18T17:21:13.127Z",
+    "ttlSec":86400
 }
 ```
 
-### Response-Error ###
+## Response-Error ##
 Status: 401
 
 BODY:
 
 ```
 {
-    "code": "UnauthorizedError",
-    "message": "Session with token:'143b1a04-a816-4cdf-958f-15ab56350479' was not found"
+    "code": "401",
+    "message": "Invalid xSessionToken: 12a3e5bb-607c-4f68-a6c6-f2ecd024c9ed"
 }
 ```
 
 ## Update/Replace Session ##
-Secured by x-session-token Http Header.
 
-Replaces content of session with request body.
+Replaces content of session with the request body.
 
-### Request ###
-Header -> x-session-token: string
+## Request ##
 
-PUT: /
+PUT: /v1/6309c3e7-4637-4a7d-b20e-c0cf3f628d0f
 
 BODY:
 
 ```
 {
-    "AccountId":"6309c3e7-4637-4a7d-b20e-c0cf3f628d0f"
+    "NewValue":"6309c3e7-4637-4a7d-b20e-c0cf3f628d0f"
 }
 ```
 
-### Response-OK ###
+## Response-OK ##
 Status: 200
 
 BODY:
@@ -144,30 +134,29 @@ BODY:
     "AccountId": "6309c3e7-4637-4a7d-b20e-c0cf3f628d0f",
     "xSessionToken": "1c6d3006-9ca4-4115-80ee-9fc9225f3001",
     "Expires": "2015-05-18T17:15:51.628Z",
-    "Ttl":86400
+    "Ttl": 3600,
+    "NewValue":"6309c3e7-4637-4a7d-b20e-c0cf3f628d0f"
 }
 ```
 
-### Response-Error ###
+## Response-Error ##
 Status: 401
 BODY:
 
 ```
 {
-    "code": "UnauthorizedError",
-    "message": "Session with token:'143b1a04-a816-4cdf-958f-15ab56350479' was not found"
+    "code": "401",
+    "message": "Invalid xSessionToken: 12a3e5bb-607c-4f68-a6c6-f2ecd024c9ed"
 }
 ```
 
-## Update/Patch Session ##
-Secured by x-session-token Http Header.
+# Update/Patch Session #
 
 Adds to the content of session based on request body.
 
-### Request ###
-Header -> x-session-token: string
+## Request ##
 
-PATCH: /
+PATCH: /v1/6309c3e7-4637-4a7d-b20e-c0cf3f628d0f
 
 BODY:
 
@@ -198,38 +187,36 @@ BODY:
 
 ```
 {
-    "code": "UnauthorizedError",
-    "message": "Session with token:'143b1a04-a816-4cdf-958f-15ab56350479' was not found"
+    "code": "401",
+    "message": "Invalid xSessionToken: 12a3e5bb-607c-4f68-a6c6-f2ecd024c9ed"
 }
 ```
 
 ## Delete Session ##
-Secured by x-session-token Http Header.
 
 Terminates the session.
 
-### Request ###
-Header -> x-session-token: string
+## Request ##
 
-DELETE: /
+DELETE: /v1/6309c3e7-4637-4a7d-b20e-c0cf3f628d0f
 
-### Response-OK ###
+## Response-OK ##
 Status: 200
 
 BODY:
 
 ```
 {
-    "Deleted": true
+    "deleted": true
 }
 ```
-### Response-Error ###
+## Response-Error ##
 Status: 404
 
 BODY:
 
 ```
 {
-    "Deleted": false
+    "deleted": false
 }
 ```

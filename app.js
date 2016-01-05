@@ -131,7 +131,6 @@ server.put({path: routePrefix + '/:xSessionToken', flags: 'i'}, function (req, r
 
     session.update(xSessionToken, input)
         .then(function(result){
-console.info(result);
             return res.send(result);
         })
         .catch(function(err){
