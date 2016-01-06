@@ -222,5 +222,6 @@ BODY:
 ```
 
 # Environments #
-
-Dev: http://state-service-dev-ms.end-points.io/ (give it a min to warm up when it is slow)
+## Dev ##
+http://state-service-dev-ms.end-points.io/ (give it a min to warm up when it is slow)
+https://state-service-dev-ms.herokuapp.com/ (give it a min to warm up when it is slow)
