@@ -223,4 +223,4 @@ BODY:
 
 # Environments #
 
-Dev: http://state-service-dev-ms.end-points.io/
+Dev: http://state-service-dev-ms.end-points.io/ (give it a min to warm up when it is slow)
