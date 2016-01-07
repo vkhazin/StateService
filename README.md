@@ -12,7 +12,7 @@ Initial implementation compares xAuthKeys from ./config/default.json file
 
 ## Request ##
 Header ->  
-x-auth-key: string  
+x-auth-key: 4a060c73-aced-4819-9318-12fba2dafd58  
 
 POST: /v1
 
